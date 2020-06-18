@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<link type="text/css" rel="stylesheet" href="styles/style.css" />
+
+	<script src="scripts/common.js"></script>
+	<script src="scripts/d3.min.js"></script>
+	<script src="scripts/topojson.min.js"></script>
+	<script src="data/world.js"></script>
+	<script>
+	const LAND = topojson.feature(world, world.objects.land);
+	const ASIMEQ_TRANSF = d3.geo
+		.azimuthalEquidistant()
+		.translate([500, 500])
+		.scale(140)
+		.clipAngle(175)
+		.precision(.1)
+	const inpts = {};
+
+	let moving = 0;
+	let currLat = 0; /* -90 > 90 N/S */
+	let currLng = 0; /*-180 > 180 E/O */
+
+	function goToPath(data) {
+		blockInpts();
+		const p=()=>{
+			const d = data.shift();
+			if(d) {
+				goTo(d[0],d[1],d[2],p)
+			} else {
+				unlockInpts();
+			}
+		}
+		p();
+	}
+
+	function goTo(dirLat,dirLng,stN,cb) {
+		if((stN|=0)<=0 || (dirLat===currLat && dirLng===currLng))
+			return cb&&cb()||true;
+
+		goTo2(
+			latlngToXyz(currLat, currLng),
+			latlngToXyz(dirLat,dirLng),
+			1,
+			stN,
+			cb);
+	}
+	function goTo2(beg,dir,st,stN,cb) {
+		inpts['stp'].value = st;
+
+		if(st<=0||st>=stN) {
+			moveTo(xyzToLatlng(dir));
+			return cb&&cb()||true;
+		}
+
+		const next = xyzToLatlng(getCurvedMiddlePoint(beg, dir, st/stN));
+
+		setTimeout(()=>{
+			moveTo(next);
+			goTo2(beg,dir,st+1,stN,cb);
+		}, 25);
+	}
+
+	function reset() {
+		document.getElementById('map').innerHTML = ''; // reset
+		const svg = d3.selectAll('#map').data([ASIMEQ_TRANSF]).append('svg');
+		svg.each(project);
+
+		let g = svg.append('g');
+		g.append('path').datum(LAND).attr('class', 'land');
+		g.append('path').attr('id', 'actu').attr('class', 'actu');
+
+		inpts['lat'] = document.getElementById("inptLat")
+		inpts['lng'] = document.getElementById("inptLng")
+		inpts['stp'] = document.getElementById("inptSteps")
+		inpts['nup'] = document.getElementById("inptNorth")
+		inpts['mvTo'] = document.getElementById("inptMoveTo")
+		inpts['otrs'] = document.getElementsByName("input")
+
+		moveTo([parseFloat(inpts['lat'].value), parseFloat(inpts['lng'].value)]);
+	}
+	function moveTo(latlng) {
+		const rot = inpts['nup'].checked
+				? 0
+				: Math.atan2(latlng[1], latlng[0])*TO_DEG;
+
+		ASIMEQ_TRANSF.rotate([-latlng[1], -latlng[0], rot]);
+		d3.select('#actu').datum({type: 'Point', coordinates: [latlng[1], latlng[0]]});
+		d3.select('g').each(redrawPath);
+		currLat = latlng[0];
+		currLng = latlng[1];
+
+		inpts['lat'].value = currLat.toFixed(6);
+		inpts['lng'].value = currLng.toFixed(6);
+	}
+
+	function clickGo() {
+		const lat = parseFloat(inpts['lat'].value);
+		const lng = parseFloat(inpts['lng'].value);
+		const stp = parseFloat(inpts['stp'].value);
+
+		blockInpts();
+		goTo(lat, lng, stp, unlockInpts)
+	}
+
+	function blockInpts() {
+		inpts['lat'].disabled = true;
+		inpts['lng'].disabled = true;
+		inpts['stp'].disabled = true;
+		inpts['mvTo'].disabled = true;
+		for(let o of inpts['otrs'])
+			o.disabled = true;
+	}
+	function unlockInpts() {
+		inpts['lat'].disabled = undefined;
+		inpts['lng'].disabled = undefined;
+		inpts['stp'].disabled = undefined;
+		inpts['mvTo'].disabled = undefined;
+		for(let o of inpts['otrs'])
+			o.disabled = undefined;
+	}
+
+	</script>
+</head>
+<body onLoad="reset();">
+	<div id="inputs">
+		<span>Lat:</span>
+		<input id="inptLat" type="number" min="-90" max="90" step="0.000001" value="90"/>
+		<span>Lng:</span>
+		<input id="inptLng" type="number" min="-180" max="180" step="0.000001" value="0"/>
+		<span>Steps:</span>
+		<input id="inptSteps" type="number" min="1" step="1" value="0"/>
+		<span>Keep north up:</span>
+		<input id="inptNorth" type="checkbox">
+		<button id="inptMoveTo" onclick="clickGo()">Move</button>
+		<div>Lat: Latitude (-90 to 90, 0=Equator)</div>
+		<div>Lng: Longitude (-180 to 180, 0=Greenwitch)</div>
+	</div>
+	<div id="functions">
+		<span>Move along trips:</span>
+
+		<!-- Test all extremes values to test animations -->
+		<button id="input" onclick="goToPath([
+		//   lat    lng     steps(1=25ms)
+			[ 90,   0, 10],
+			[ 20,  20,100],
+			[-20,  20, 50],
+			[-20, -20, 50],
+			[ 20, -20, 50],
+			[ 20,   0, 50],
+			[  0,   0, 50],
+			[  0,  20, 50],
+			[ 20,  20, 50],
+			[ 80,  20,100],
+			[ 80, -20, 50],
+			[ 80,-160, 50],
+			[ 80, 160, 50],
+			[ 20,-160,100],
+			[-20,-160, 50],
+			[-20, 160, 50],
+			[ 20, 160, 50],	
+			[-80, 160,100],
+			[-80,-160, 50],
+			[-80, -20, 50],
+			[-80,  20, 50],
+			[-90,   0, 50],
+			[ 90,   0,100],
+		]);" >Test Extreme cases</button>
+	</div>
+
+	<div id="map"></div>
+
+	<span><a href="map-hd.html">HD Map</a></span>
+</body>
+</html>

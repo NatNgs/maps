@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+
+	<link type="text/css" rel="stylesheet" href="styles/style.css" />
+
+	<script src="scripts/common.js"></script>
+	<script src="scripts/d3.min.js"></script>
+	<!--script src="topojson.min.js"></script-->
+	<script src="https://unpkg.com/topojson@3"></script>
+	<script src="data/world-hd.js"></script>
+	<script>
+	const CLIP_ANGLE = 175;
+	const ASIMEQ_TRANSF = d3.geo
+		.azimuthalEquidistant()
+		.translate([1000, 1000])
+		.scale(250)
+		.rotate([0,90,0])
+		.clipAngle(CLIP_ANGLE)
+		.precision(.1)
+	const GRAT_COUNT = (1000/6371) * TO_DEG;
+
+	let moving = 0;
+	const inpts = {};
+
+	let g_land = undefined;
+	let g_countries = undefined;
+	let g_graticule = undefined;
+	let g_grid = [];
+
+	const LAND = topojson.feature(worldHD, worldHD.objects.land);
+	const COUNTRIES = topojson.mesh(worldHD, worldHD.objects.countries);
+
+	function reset() {
+		document.getElementById("map").innerHTML = ""; // reset
+		const svg = d3.selectAll("#map").data([ASIMEQ_TRANSF]).append("svg");
+		svg.each(project);
+
+		let dyn = svg.append("g").attr("id", "dyn");
+		let stt = svg.append("g").attr("id", "stt");
+		g_land = dyn.append("path").datum(LAND);
+		g_countries = dyn.append("path").datum(COUNTRIES);
+		g_graticule = dyn.append("path").datum(d3.geo.graticule()());
+		const grid = d3.range(GRAT_COUNT, CLIP_ANGLE, GRAT_COUNT);
+		g_dist = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([0,90,0]).angle(d)());
+		g_grid[0] = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([0,0,0]).angle(d)());
+		g_grid[1] = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([90,0,0]).angle(d)());
+
+		inpts["lat"] = document.getElementById("inptLat")
+		inpts["lng"] = document.getElementById("inptLng")
+		inpts["ang"] = document.getElementById("inptAng")
+		inpts["mvTo"] = document.getElementById("inptMoveTo")
+		inpts["grat"] = document.getElementById("inptGrat")
+		inpts["grid"] = document.getElementById("inptGrid")
+		inpts["dist"] = document.getElementById("inptDist")
+		inpts["land"] = document.getElementById("inptLand")
+		inpts["countries"] = document.getElementById("inptCtry")
+
+		updateGraphics();
+
+		d3.select("#stt").each(redrawPath);
+		moveTo(parseFloat(inpts["lat"].value), parseFloat(inpts["lng"].value));
+	}
+
+	function moveTo(lat, lng, a=0) {
+		ASIMEQ_TRANSF.rotate([-lng, -lat, a]);
+		d3.select("#dyn").each(redrawPath);
+
+		inpts["lat"].value = lat.toFixed(6);
+		inpts["lng"].value = lng.toFixed(6);
+	}
+
+
+	function clickGo() {
+		const lat = parseFloat(inpts["lat"].value);
+		const lng = parseFloat(inpts["lng"].value);
+		const ang = parseFloat(inpts["ang"].value);
+
+		moveTo(lat, lng, ang)
+	}
+
+	function updateGraphics() {
+		g_land.attr("class", inpts["land"].checked?"land":"unset");
+		g_countries.attr("class", inpts["countries"].checked?"countries":"unset");
+		g_graticule.attr("class", inpts["grat"].checked?"graticule":"unset");
+		g_dist.attr("class", inpts["dist"].checked?"dist":"unset");
+		for(g of g_grid)
+			g.attr("class", inpts["grid"].checked?"grid":"unset");
+	}
+	</script>
+</head>
+<body onLoad="reset();">
+	<div id="inputs">
+		<div>
+			<span>Lat:</span>
+			<input id="inptLat" type="number" min="-90" max="90" step="0.000001" value="90"/>
+			<span>Lng:</span>
+			<input id="inptLng" type="number" min="-180" max="180" step="0.000001" value="0"/>
+			<span>Rot:</span>
+			<input id="inptAng" type="number" min="-180" max="180" step="0.01" value="0"/>
+
+			<button id="inptMoveTo" onclick="clickGo()">Go</button>
+		</div>
+		<div>Lat: Latitude (-90 to 90, 0=Equator)</div>
+		<div>Lng: Longitude (-180 to 180, 0=Greenwitch)</div>
+		<div>Rot: Rotation (0=North Up, -179 to -1=turn clockwise, 1 to 179=turn counterclockwise, 180 or -180=South up)</div>
+		<div>
+			<span>Land:</span>
+			<input id="inptLand" type="checkbox" onchange="updateGraphics()" checked="checked" />
+			<span>Countries:</span>
+			<input id="inptCtry" type="checkbox" onchange="updateGraphics()" />
+			<span>Graticule:</span>
+			<input id="inptGrat" type="checkbox" onchange="updateGraphics()" />
+			<span>Distances:</span>
+			<input id="inptDist" type="checkbox" onchange="updateGraphics()" />
+			<span>Grid:</span>
+			<input id="inptGrid" type="checkbox" onchange="updateGraphics()" />
+		</div>
+	</div>
+
+	<div id="map"></div>
+
+	<span><a href="map.html">Animated map</a></span>
+</body>
+</html>

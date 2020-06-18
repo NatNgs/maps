@@ -1,0 +1,52 @@
+body {
+	background-color: #111111;
+  color: #88AAFF;
+}
+
+a {
+	color: #DDEEFF;
+}
+
+.land {
+  fill: #116644;
+  stroke: #118844;
+  stroke-width: 1px;
+}
+
+.outline {
+  fill: none;
+}
+
+.circle {
+  fill: none;
+}
+
+.actu {
+	fill: #DDEEFF40;
+}
+
+.countries {
+  stroke: #114444;
+  fill: none;
+}
+
+.grid {
+  stroke: #35F2;
+  fill: none;
+  stroke-width: 1px;
+}
+.dist {
+  stroke: #35F8;
+  fill: none;
+  stroke-width: 1px;
+}
+.graticule {
+  stroke: #46E8;
+  fill: none;
+  stroke-width: 1px;
+}
+
+.unset {
+  stroke: none;
+  fill: none;
+}
