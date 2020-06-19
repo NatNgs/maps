@@ -6,8 +6,9 @@ Show maps cetered on user defined location, with Azimuthal Equidistant projectio
 - Distances from the origin point are proportional.
 - Shapes and angles of countries are broken.
 
-Deployed at [natngs.github.io/maps/map-animated.html](natngs.github.io/maps)
-Deployed at [natngs.github.io/maps/map-hd.html](natngs.github.io/maps)
+Animated map: [https://natngs.github.io/maps/map-animated.html](natngs.github.io/maps/map-animated.html)  
+
+High quality unanimated map: [https://natngs.github.io/maps/map-hd.html](natngs.github.io/maps/map-hd.html)
 
 ## Open to Collaborations
 
