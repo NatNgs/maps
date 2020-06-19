@@ -1,14 +1,14 @@
 
 # Maps
 
-Show maps cetered on user defined location, with Azimuthal Equidistant projection.
+Show maps centered on user defined location, with Azimuthal Equidistant projection.
 
 - Distances from the origin point are proportional.
 - Shapes and angles of countries are broken.
 
-Animated map: [https://natngs.github.io/maps/map-animated.html](natngs.github.io/maps/map-animated.html)  
+Animated map: https://natngs.github.io/maps/map-animated.html
 
-High quality unanimated map: [https://natngs.github.io/maps/map-hd.html](natngs.github.io/maps/map-hd.html)
+High quality unanimated map: https://natngs.github.io/maps/map-hd.html
 
 ## Open to Collaborations
 
