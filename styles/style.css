@@ -6,3 +6,8 @@ body {
 a {
 	color: #DDEEFF;
 }
+
+svg {
+	max-width: 100vw;
+	max-height: 100vh;
+}

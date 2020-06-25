@@ -4,11 +4,12 @@
 	<meta charset="UTF-8">
 
 	<link type="text/css" rel="stylesheet" href="styles/style.css" />
-	<link type="text/css" rel="stylesheet" href="styles/svgStyle.css" id="css" />
+	<link type="text/css" rel="stylesheet" href="styles/svgStyle.css" id="svgCss" />
 
 	<script src="scripts/common.js"></script>
 	<script src="scripts/d3.min.js"></script>
-	<!--script src="topojson.min.js"></script-->
+
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.js"></script>
 	<script src="https://unpkg.com/topojson@3"></script>
 	<script src="data/world-hd.js"></script>
 	<script>
@@ -16,7 +17,6 @@
 	const ASIMEQ_TRANSF = d3.geo
 		.azimuthalEquidistant()
 		.translate([1000, 1000])
-		.scale(250)
 		.rotate([0,90,0])
 		.clipAngle(CLIP_ANGLE)
 		.precision(.1)
@@ -33,8 +33,58 @@
 	const LAND = topojson.feature(worldHD, worldHD.objects.land);
 	const COUNTRIES = topojson.mesh(worldHD, worldHD.objects.countries);
 
+	$(document).ready(()=>{
+		// Get DOM elements
+		inpts.lat = $('#inptLat')[0];
+		inpts.lng = $('#inptLng')[0];
+		inpts.rot = $('#inptRot')[0];
+		inpts.mvTo = $('#inptMoveTo')[0];
+		inpts.grat = $('#inptGrat')[0];
+		inpts.grid = $('#inptGrid')[0];
+		inpts.dist = $('#inptDist')[0];
+		inpts.land = $('#inptLand')[0];
+		inpts.countries = $('#inptCtry')[0];
+
+		// Set default values or use query parameters (?lat=1.111&lng=2.222&rot=3.333)
+		const urlParams = new URLSearchParams(window.location.search);
+		inpts.lat.value = urlParams.has('lat') ? urlParams.get('lat') : 90;
+		inpts.lng.value = urlParams.has('lng') ? urlParams.get('lng') : 0;
+		inpts.rot.value = urlParams.has('rot') ? urlParams.get('rot') : 0;
+
+		// Set SVG
+		reset();
+
+		// Get SVG style and extract into the svg element (needed for exporting as file.svg)
+		$.ajax({
+			url: 'styles/svgStyle.css',
+			type: 'GET',
+			cache: true,
+			dataType: 'text',
+			contentType: 'text/plain',
+			success: (response) => {
+				$('#map > svg').prepend($('<style/>').text(response));
+			},
+			error: ()=>{
+				console.log('Ajax Error')
+				// Alternative (may not work in all browsers)
+				try{
+					const file = document.getElementById('svgCss');
+					const content = Array.prototype.map.call(file.sheet.cssRules, (x)=>x.cssText).join(' ');
+					$('#map > svg').prepend($('<style/>').text(content));
+				} catch(e) {
+					// Could not export SVG with style
+					$('#btnDownloadSVG').attr('disabled', true).html('Not supported');
+				}
+			}
+		});
+
+		// Update views to show SVG
+		setTimeout(updateGraphics);
+		setTimeout(updateView);
+	})
+
 	function reset() {
-		document.getElementById('map').innerHTML = ''; // reset
+		$('#map').empty(); // reset
 		const svg = d3.selectAll('#map').data([ASIMEQ_TRANSF]).append('svg');
 		svg.attr('xmlns', 'http://www.w3.org/2000/svg');
 
@@ -45,42 +95,32 @@
 		g_land = dyn.append('path').datum(LAND);
 		g_countries = dyn.append('path').datum(COUNTRIES);
 		g_graticule = dyn.append('path').datum(d3.geo.graticule()());
-		const grid = d3.range(GRAT_COUNT, CLIP_ANGLE, GRAT_COUNT);
-		g_dist = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([0,90,0]).angle(d)());
-		g_grid[0] = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([0,0,0]).angle(d)());
-		g_grid[1] = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([90,0,0]).angle(d)());
+		const grids = stt.selectAll('path.circle').data(d3.range(GRAT_COUNT, CLIP_ANGLE, GRAT_COUNT)).enter();
+		g_dist = grids.append('path').datum(d=>d3.geo.circle().origin([0,90,0]).angle(d)());
+		g_grid[0] = grids.append('path').datum(d=>d3.geo.circle().origin([0,0,0]).angle(d)());
+		g_grid[1] = grids.append('path').datum(d=>d3.geo.circle().origin([90,0,0]).angle(d)());
 
-		inpts.lat = document.getElementById('inptLat')
-		inpts.lng = document.getElementById('inptLng')
-		inpts.ang = document.getElementById('inptAng')
-		inpts.mvTo = document.getElementById('inptMoveTo')
-		inpts.grat = document.getElementById('inptGrat')
-		inpts.grid = document.getElementById('inptGrid')
-		inpts.dist = document.getElementById('inptDist')
-		inpts.land = document.getElementById('inptLand')
-		inpts.countries = document.getElementById('inptCtry')
-
-		updateGraphics();
+		// Set resizable
+		svg.attr('viewBox', '500 500 1000 1000');
+		svg.attr('width', null).attr('height', null);
 
 		d3.select('#stt').each(redrawPath);
-		moveTo(parseFloat(inpts.lat.value), parseFloat(inpts.lng.value));
 	}
 
-	function moveTo(lat, lng, a=0) {
-		ASIMEQ_TRANSF.rotate([-lng, -lat, a]);
+	function moveTo(lat, lng, rot) {
+		ASIMEQ_TRANSF.rotate([-lng, -lat, rot]);
 		d3.select('#dyn').each(redrawPath);
 
 		inpts.lat.value = lat.toFixed(6);
 		inpts.lng.value = lng.toFixed(6);
 	}
 
-
-	function clickGo() {
+	function updateView() {
 		const lat = parseFloat(inpts.lat.value);
 		const lng = parseFloat(inpts.lng.value);
-		const ang = parseFloat(inpts.ang.value);
+		const rot = parseFloat(inpts.rot.value);
 
-		moveTo(lat, lng, ang)
+		moveTo(lat, lng, rot)
 	}
 
 	function updateGraphics() {
@@ -93,7 +133,7 @@
 	}
 	</script>
 </head>
-<body onLoad="reset();">
+<body>
 	<div id="inputs">
 		<div>
 			<span>Lat:</span>
@@ -101,9 +141,9 @@
 			<span>Lng:</span>
 			<input id="inptLng" type="number" min="-180" max="180" step="0.000001" value="0"/>
 			<span>Rot:</span>
-			<input id="inptAng" type="number" min="-180" max="180" step="0.01" value="0"/>
+			<input id="inptRot" type="number" min="-180" max="180" step="0.01" value="0"/>
 
-			<button id="inptMoveTo" onclick="clickGo()">Go</button>
+			<button id="inptMoveTo" onclick="updateView()">Go</button>
 		</div>
 		<div>Lat: Latitude (-90 to 90, 0=Equator)</div>
 		<div>Lng: Longitude (-180 to 180, 0=Greenwitch)</div>
@@ -122,7 +162,7 @@
 		</div>
 		<div>
 			<span>Download current view as SVG:</span>
-			<button onclick="saveSvg('map', 'map.svg')">SVG</button>
+			<button id="btnDownloadSVG" onclick="saveSvg($('#map').html(), 'map.svg')">Download</button>
 		</div>
 	</div>
 
