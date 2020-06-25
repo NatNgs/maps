@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
 
 	<link type="text/css" rel="stylesheet" href="styles/style.css" />
+	<link type="text/css" rel="stylesheet" href="styles/svgStyle.css" id="css" />
 
 	<script src="scripts/common.js"></script>
 	<script src="scripts/d3.min.js"></script>
@@ -33,60 +34,62 @@
 	const COUNTRIES = topojson.mesh(worldHD, worldHD.objects.countries);
 
 	function reset() {
-		document.getElementById("map").innerHTML = ""; // reset
-		const svg = d3.selectAll("#map").data([ASIMEQ_TRANSF]).append("svg");
+		document.getElementById('map').innerHTML = ''; // reset
+		const svg = d3.selectAll('#map').data([ASIMEQ_TRANSF]).append('svg');
+		svg.attr('xmlns', 'http://www.w3.org/2000/svg');
+
 		svg.each(project);
 
-		let dyn = svg.append("g").attr("id", "dyn");
-		let stt = svg.append("g").attr("id", "stt");
-		g_land = dyn.append("path").datum(LAND);
-		g_countries = dyn.append("path").datum(COUNTRIES);
-		g_graticule = dyn.append("path").datum(d3.geo.graticule()());
+		let dyn = svg.append('g').attr('id', 'dyn');
+		let stt = svg.append('g').attr('id', 'stt');
+		g_land = dyn.append('path').datum(LAND);
+		g_countries = dyn.append('path').datum(COUNTRIES);
+		g_graticule = dyn.append('path').datum(d3.geo.graticule()());
 		const grid = d3.range(GRAT_COUNT, CLIP_ANGLE, GRAT_COUNT);
-		g_dist = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([0,90,0]).angle(d)());
-		g_grid[0] = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([0,0,0]).angle(d)());
-		g_grid[1] = stt.selectAll("path.circle").data(grid).enter().append("path").datum(d=>d3.geo.circle().origin([90,0,0]).angle(d)());
+		g_dist = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([0,90,0]).angle(d)());
+		g_grid[0] = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([0,0,0]).angle(d)());
+		g_grid[1] = stt.selectAll('path.circle').data(grid).enter().append('path').datum(d=>d3.geo.circle().origin([90,0,0]).angle(d)());
 
-		inpts["lat"] = document.getElementById("inptLat")
-		inpts["lng"] = document.getElementById("inptLng")
-		inpts["ang"] = document.getElementById("inptAng")
-		inpts["mvTo"] = document.getElementById("inptMoveTo")
-		inpts["grat"] = document.getElementById("inptGrat")
-		inpts["grid"] = document.getElementById("inptGrid")
-		inpts["dist"] = document.getElementById("inptDist")
-		inpts["land"] = document.getElementById("inptLand")
-		inpts["countries"] = document.getElementById("inptCtry")
+		inpts.lat = document.getElementById('inptLat')
+		inpts.lng = document.getElementById('inptLng')
+		inpts.ang = document.getElementById('inptAng')
+		inpts.mvTo = document.getElementById('inptMoveTo')
+		inpts.grat = document.getElementById('inptGrat')
+		inpts.grid = document.getElementById('inptGrid')
+		inpts.dist = document.getElementById('inptDist')
+		inpts.land = document.getElementById('inptLand')
+		inpts.countries = document.getElementById('inptCtry')
 
 		updateGraphics();
 
-		d3.select("#stt").each(redrawPath);
-		moveTo(parseFloat(inpts["lat"].value), parseFloat(inpts["lng"].value));
+		d3.select('#stt').each(redrawPath);
+		moveTo(parseFloat(inpts.lat.value), parseFloat(inpts.lng.value));
 	}
 
 	function moveTo(lat, lng, a=0) {
 		ASIMEQ_TRANSF.rotate([-lng, -lat, a]);
-		d3.select("#dyn").each(redrawPath);
+		d3.select('#dyn').each(redrawPath);
 
-		inpts["lat"].value = lat.toFixed(6);
-		inpts["lng"].value = lng.toFixed(6);
+		inpts.lat.value = lat.toFixed(6);
+		inpts.lng.value = lng.toFixed(6);
 	}
 
 
 	function clickGo() {
-		const lat = parseFloat(inpts["lat"].value);
-		const lng = parseFloat(inpts["lng"].value);
-		const ang = parseFloat(inpts["ang"].value);
+		const lat = parseFloat(inpts.lat.value);
+		const lng = parseFloat(inpts.lng.value);
+		const ang = parseFloat(inpts.ang.value);
 
 		moveTo(lat, lng, ang)
 	}
 
 	function updateGraphics() {
-		g_land.attr("class", inpts["land"].checked?"land":"unset");
-		g_countries.attr("class", inpts["countries"].checked?"countries":"unset");
-		g_graticule.attr("class", inpts["grat"].checked?"graticule":"unset");
-		g_dist.attr("class", inpts["dist"].checked?"dist":"unset");
+		g_land.attr('class', inpts.land.checked?'land':'unset');
+		g_countries.attr('class', inpts.countries.checked?'countries':'unset');
+		g_graticule.attr('class', inpts.grat.checked?'graticule':'unset');
+		g_dist.attr('class', inpts.dist.checked?'dist':'unset');
 		for(g of g_grid)
-			g.attr("class", inpts["grid"].checked?"grid":"unset");
+			g.attr('class', inpts.grid.checked?'grid':'unset');
 	}
 	</script>
 </head>
@@ -116,6 +119,10 @@
 			<input id="inptDist" type="checkbox" onchange="updateGraphics()" />
 			<span>Grid:</span>
 			<input id="inptGrid" type="checkbox" onchange="updateGraphics()" />
+		</div>
+		<div>
+			<span>Download current view as SVG:</span>
+			<button onclick="saveSvg('map', 'map.svg')">SVG</button>
 		</div>
 	</div>
 

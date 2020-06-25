@@ -55,3 +55,15 @@ function getCurvedMiddlePoint(p1, p2, percent=0.5) {
 
 	return carth3;
 }
+
+function saveSvg(svgContainerID, name) {
+	const css = Array.prototype.map.call(document.getElementById('css').sheet.cssRules, (x)=>x.cssText).join('\n');
+	const svgData = document.getElementById(svgContainerID).innerHTML.replace('>', '><style><![CDATA['+ css +']]></style>');
+	const svgBlob = new Blob(['<?xml version="1.0" standalone="no"?>', svgData], {type:'image/svg+xml;charset=utf-8'});
+	const downloadLink = document.createElement('a');
+	downloadLink.href = URL.createObjectURL(svgBlob);
+	downloadLink.download = name;
+	document.body.appendChild(downloadLink);
+	downloadLink.click();
+	document.body.removeChild(downloadLink);
+}

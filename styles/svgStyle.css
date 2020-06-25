@@ -1,0 +1,48 @@
+svg {
+	background-color: #111111;
+	color: #88AAFF;
+}
+
+svg .land {
+	fill: #116644;
+	stroke: #118844;
+	stroke-width: 1px;
+}
+
+svg .outline {
+	fill: none;
+}
+
+svg .circle {
+	fill: none;
+}
+
+svg .actu {
+	fill: #DDEEFF40;
+}
+
+svg .countries {
+	stroke: #114444;
+	fill: none;
+}
+
+svg .grid {
+	stroke: #35F2;
+	fill: none;
+	stroke-width: 1px;
+}
+svg .dist {
+	stroke: #35F8;
+	fill: none;
+	stroke-width: 1px;
+}
+svg .graticule {
+	stroke: #46E8;
+	fill: none;
+	stroke-width: 1px;
+}
+
+svg .unset {
+	stroke: none;
+	fill: none;
+}
